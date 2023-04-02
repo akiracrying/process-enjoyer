@@ -4,24 +4,34 @@
 processenjoyer::processenjoyer(QWidget* parent)
     : QMainWindow(parent)
 {
-    ui.setupUi(this);
 
+    ui.setupUi(this);
+    QLocale curLocale(QLocale("ru_RU"));
+    QLocale::setDefault(curLocale);
+    setlocale(LC_ALL, "");
 
     wchar_t buffer[1024];
 
+    DWORD dwRead;
+    DWORD dwWritten;
     DWORD dwTmp = 0;
     LPCWSTR message = { 0 };
     HANDLE hPipe;
     process Temp = { 0 };
-    int err;
+   // Temp.procDescryption = new wchar_t[MAX_NAME_LENGTH];
+
+    int err = 0;
 
     hPipe = CreateFile(TEXT("\\\\.\\pipe\\Pipe"), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (hPipe != INVALID_HANDLE_VALUE){
 
         char* wcharConverter;
         for (size_t row = 0; row < 300 ; row++) {
-            
-            getProcessInfo(hPipe, &err, &Temp);
+            if (ReadFile(hPipe, &Temp, sizeof(Temp), &dwRead, NULL) != FALSE)
+            {
+                WriteFile(hPipe, &Temp, sizeof(Temp), &dwWritten, NULL);
+            }
+            //getProcessInfo(hPipe, &err, &Temp);
             if (err != 1) {
                 ui.tableWidget->insertRow(ui.tableWidget->rowCount());
      
@@ -75,6 +85,14 @@ processenjoyer::processenjoyer(QWidget* parent)
                     )
                 );
                 delete[] wcharConverter;
+                //wcharConverter = new char[sizeof(Temp.procDescryption)];
+                //wcstombs(wcharConverter, Temp.procDescryption, sizeof(Temp.procDescryption));
+                //ui.tableWidget->setItem(row, 6,
+                //    new QTableWidgetItem(
+                //        wcharConverter
+                //    )
+                //);
+                //delete[] wcharConverter;
                 ui.tableWidget->setItem(row, 7,
                     new QTableWidgetItem(std::to_string(Temp.CLR).c_str())
                 );
@@ -115,6 +133,8 @@ processenjoyer::processenjoyer(QWidget* parent)
         }
         CloseHandle(hPipe);
     }
+
+    //delete[] Temp.procDescryption;
 }
 
 

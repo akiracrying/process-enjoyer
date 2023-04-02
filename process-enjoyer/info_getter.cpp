@@ -13,3 +13,6 @@ void getProcessInfo(HANDLE hPipe, int*err, process* Temp) {
     }
 }
 
+void fillTableInfo() {
+
+}

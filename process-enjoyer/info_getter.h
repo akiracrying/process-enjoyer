@@ -2,10 +2,11 @@
 #include <Windows.h>
 #include "processenjoyer.h"
 #include "ui_processenjoyer.h"
+#include <locale.h>
 
-#define MAX_COUNT 5
+#define MAX_COUNT 1024
 
-#define MAX_NAME_LENGTH 30
+#define MAX_NAME_LENGTH 256
 #define MAX_DETAILS_LENGTH 32
 #define MAX_TYPE_LENGTH 7
 enum actions{
@@ -33,6 +34,7 @@ typedef struct process {
 	wchar_t SID[MAX_NAME_LENGTH];
 	wchar_t procType[MAX_TYPE_LENGTH];
 	wchar_t integrityLevel[MAX_DETAILS_LENGTH];
+	wchar_t* procDescryption;
 
 	BOOL CLR;
 	BOOL ASLR;
@@ -43,8 +45,7 @@ typedef struct process {
 	wchar_t parentName[MAX_NAME_LENGTH];
 	DWORD parentPID;
 
-	wchar_t processDllsName[MAX_COUNT][MAX_COUNT];
-
+	wchar_t processDllsName[MAX_COUNT][MAX_NAME_LENGTH];
 }process;
 
 

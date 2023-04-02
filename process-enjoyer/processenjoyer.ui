@@ -69,6 +69,11 @@
        </column>
        <column>
         <property name="text">
+         <string>DESCRIPTION</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
          <string>CLR</string>
         </property>
        </column>

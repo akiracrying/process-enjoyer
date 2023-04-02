@@ -45,7 +45,7 @@ typedef struct process {
 
 	wchar_t processDllsName[MAX_COUNT][MAX_COUNT];
 
-}PROCESS;
+}process;
 
 
-PROCESS getProcessInfo();
+void getProcessInfo(HANDLE, int*, process*);

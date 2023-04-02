@@ -1,144 +1,122 @@
 
 #include "info_getter.h"
 
-
-processenjoyer::processenjoyer(QWidget *parent)
+processenjoyer::processenjoyer(QWidget* parent)
     : QMainWindow(parent)
 {
     ui.setupUi(this);
-    PROCESS *allProcess = new PROCESS;
 
-    QModelIndex index;
-    allProcess[0] = getProcessInfo();
 
-    // For is needed
-    ui.tableWidget->insertRow(ui.tableWidget->rowCount());
-    char* wcharConverter;
+    wchar_t buffer[1024];
 
-    for (size_t i = PID; i < ui.tableWidget->colorCount(); i++)
-    {
-        switch (i) {
-            case PID:
-                ui.tableWidget->setItem(0, i,
-                    new QTableWidgetItem(std::to_string(allProcess[0].PID).c_str()));
-                break;
-            case PROCESS_NAME:
-                wcharConverter = new char[sizeof(allProcess[0].processName)];
-                wcstombs(wcharConverter, allProcess[0].processName, sizeof(allProcess[0].processName));
-                ui.tableWidget->setItem(0, i,
+    DWORD dwTmp = 0;
+    LPCWSTR message = { 0 };
+    HANDLE hPipe;
+    process Temp = { 0 };
+    int err;
+
+    hPipe = CreateFile(TEXT("\\\\.\\pipe\\Pipe"), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    if (hPipe != INVALID_HANDLE_VALUE){
+
+        char* wcharConverter;
+        for (size_t row = 0; row < 300 ; row++) {
+            
+            getProcessInfo(hPipe, &err, &Temp);
+            if (err != 1) {
+                ui.tableWidget->insertRow(ui.tableWidget->rowCount());
+     
+                ui.tableWidget->setItem(row, 0,
+                    new QTableWidgetItem(std::to_string(Temp.PID).c_str()));
+                wcharConverter = new char[sizeof(Temp.processName)];
+                wcstombs(wcharConverter, Temp.processName, sizeof(Temp.processName));
+                ui.tableWidget->setItem(row, 1,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case PATH:
-                wcharConverter = new char[sizeof(allProcess[0].pathProcessExe)];
-                wcstombs(wcharConverter, allProcess[0].pathProcessExe, sizeof(allProcess[0].pathProcessExe));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.pathProcessExe)];
+                wcstombs(wcharConverter, Temp.pathProcessExe, sizeof(Temp.pathProcessExe));
+                ui.tableWidget->setItem(row, 2,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case OWNER:
-                wcharConverter = new char[sizeof(allProcess[0].processOwner)];
-                wcstombs(wcharConverter, allProcess[0].processOwner, sizeof(allProcess[0].processOwner));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.processOwner)];
+                wcstombs(wcharConverter, Temp.processOwner, sizeof(Temp.processOwner));
+                ui.tableWidget->setItem(row, 3,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case SID_NAME:
-                wcharConverter = new char[sizeof(allProcess[0].SID)];
-                wcstombs(wcharConverter, allProcess[0].SID, sizeof(allProcess[0].SID));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.SID)];
+                wcstombs(wcharConverter, Temp.SID, sizeof(Temp.SID));
+                ui.tableWidget->setItem(row, 4,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case TYPE:
-                wcharConverter = new char[sizeof(allProcess[0].procType)];
-                wcstombs(wcharConverter, allProcess[0].procType, sizeof(allProcess[0].procType));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.procType)];
+                wcstombs(wcharConverter, Temp.procType, sizeof(Temp.procType));
+                ui.tableWidget->setItem(row, 5,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case INT_LVL:
-                wcharConverter = new char[sizeof(allProcess[0].integrityLevel)];
-                wcstombs(wcharConverter, allProcess[0].integrityLevel, sizeof(allProcess[0].integrityLevel));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.integrityLevel)];
+                wcstombs(wcharConverter, Temp.integrityLevel, sizeof(Temp.integrityLevel));
+                ui.tableWidget->setItem(row, 6,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case CLR:
-                ui.tableWidget->setItem(0, i,
-                    new QTableWidgetItem(std::to_string(allProcess[0].CLR).c_str())
+                ui.tableWidget->setItem(row, 7,
+                    new QTableWidgetItem(std::to_string(Temp.CLR).c_str())
                 );
-                break;
-            case ASLR:
-                ui.tableWidget->setItem(0, i,
-                    new QTableWidgetItem(std::to_string(allProcess[0].ASLR).c_str())
+                ui.tableWidget->setItem(row, 8,
+                    new QTableWidgetItem(std::to_string(Temp.ASLR).c_str())
                 );
-                break;
-            case DEP:
-                ui.tableWidget->setItem(0, i,
-                    new QTableWidgetItem(std::to_string(allProcess[0].DEP).c_str())
+                ui.tableWidget->setItem(row, 9,
+                    new QTableWidgetItem(std::to_string(Temp.DEP).c_str())
                 );
-                break;
-            case ASLR_DET:
-                wcharConverter = new char[sizeof(allProcess[0].aslrDetails)];
-                wcstombs(wcharConverter, allProcess[0].aslrDetails, sizeof(allProcess[0].aslrDetails));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.aslrDetails)];
+                wcstombs(wcharConverter, Temp.aslrDetails, sizeof(Temp.aslrDetails));
+                ui.tableWidget->setItem(row, 10,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case DEP_DET:
-                wcharConverter = new char[sizeof(allProcess[0].depDetails)];
-                wcstombs(wcharConverter, allProcess[0].depDetails, sizeof(allProcess[0].depDetails));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.depDetails)];
+                wcstombs(wcharConverter, Temp.depDetails, sizeof(Temp.depDetails));
+                ui.tableWidget->setItem(row, 11,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case PARENT_NAME:
-                wcharConverter = new char[sizeof(allProcess[0].parentName)];
-                wcstombs(wcharConverter, allProcess[0].parentName, sizeof(allProcess[0].parentName));
-                ui.tableWidget->setItem(0, i,
+                wcharConverter = new char[sizeof(Temp.parentName)];
+                wcstombs(wcharConverter, Temp.parentName, sizeof(Temp.parentName));
+                ui.tableWidget->setItem(row, 12,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                break;
-            case PARENT_PID:
-                ui.tableWidget->setItem(0, i,
-                    new QTableWidgetItem(std::to_string(allProcess[0].parentPID).c_str()));
-                break;
-            case DLL:
-                //todo
-                break;
+                ui.tableWidget->setItem(row, 13,
+                    new QTableWidgetItem(std::to_string(Temp.parentPID).c_str()));
+                //ui.tableWidget->selectColumn(DLL);
+            }
         }
+        CloseHandle(hPipe);
     }
-
-    //ui.listWidget->addItem(allProcess.name);
 }
+
 
 processenjoyer::~processenjoyer()
 {

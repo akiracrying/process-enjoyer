@@ -1,23 +1,15 @@
 #include "info_getter.h"
 
-PROCESS getProcessInfo() {
-    PROCESS INFO = {
-        1237,
-        L"explorer.exe",
-        L"C:\\Windows\\explorer.exe",
-        L"SYSTEM",
-        L"S-1-5-1-18",
-        L"HUINYA",
-        L"INTEGRITY",
-        false,
-        false,
-        false,
-        L"ASLR_DET",
-        L"DERP_DET",
-        L"BARAK_OBAMA",
-        228,
-        {L"DAS",L"ASD"},
-    };
-    return INFO;
+void getProcessInfo(HANDLE hPipe, int*err, process* Temp) {
+    DWORD dwRead;
+    DWORD dwWritten;
+
+    if (ReadFile(hPipe, Temp, sizeof(Temp), &dwRead, NULL) != FALSE)
+    {
+        WriteFile(hPipe, Temp, sizeof(Temp), &dwWritten, NULL);
+    }
+    else {
+        *err = 1;
+    }
 }
 

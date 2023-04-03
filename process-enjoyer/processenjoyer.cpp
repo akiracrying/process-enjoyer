@@ -26,65 +26,75 @@ processenjoyer::processenjoyer(QWidget* parent)
     if (hPipe != INVALID_HANDLE_VALUE){
 
         char* wcharConverter;
-        for (size_t row = 0; row < 300 ; row++) {
+        for (size_t row = 0;  ; row++) {
+            int col = 0;
             if (ReadFile(hPipe, &Temp, sizeof(Temp), &dwRead, NULL) != FALSE)
             {
                 WriteFile(hPipe, &Temp, sizeof(Temp), &dwWritten, NULL);
+            }
+            else {
+                break;
             }
             //getProcessInfo(hPipe, &err, &Temp);
             if (err != 1) {
                 ui.tableWidget->insertRow(ui.tableWidget->rowCount());
      
-                ui.tableWidget->setItem(row, 0,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.PID).c_str()));
                 wcharConverter = new char[sizeof(Temp.processName)];
                 wcstombs(wcharConverter, Temp.processName, sizeof(Temp.processName));
-                ui.tableWidget->setItem(row, 1,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 wcharConverter = new char[sizeof(Temp.pathProcessExe)];
                 wcstombs(wcharConverter, Temp.pathProcessExe, sizeof(Temp.pathProcessExe));
-                ui.tableWidget->setItem(row, 2,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 wcharConverter = new char[sizeof(Temp.processOwner)];
                 wcstombs(wcharConverter, Temp.processOwner, sizeof(Temp.processOwner));
-                ui.tableWidget->setItem(row, 3,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 wcharConverter = new char[sizeof(Temp.SID)];
                 wcstombs(wcharConverter, Temp.SID, sizeof(Temp.SID));
-                ui.tableWidget->setItem(row, 4,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 wcharConverter = new char[sizeof(Temp.procType)];
                 wcstombs(wcharConverter, Temp.procType, sizeof(Temp.procType));
-                ui.tableWidget->setItem(row, 5,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 wcharConverter = new char[sizeof(Temp.integrityLevel)];
                 wcstombs(wcharConverter, Temp.integrityLevel, sizeof(Temp.integrityLevel));
-                ui.tableWidget->setItem(row, 6,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 //wcharConverter = new char[sizeof(Temp.procDescryption)];
                 //wcstombs(wcharConverter, Temp.procDescryption, sizeof(Temp.procDescryption));
                 //ui.tableWidget->setItem(row, 6,
@@ -93,41 +103,54 @@ processenjoyer::processenjoyer(QWidget* parent)
                 //    )
                 //);
                 //delete[] wcharConverter;
-                ui.tableWidget->setItem(row, 7,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.CLR).c_str())
                 );
-                ui.tableWidget->setItem(row, 8,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.ASLR).c_str())
                 );
-                ui.tableWidget->setItem(row, 9,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.DEP).c_str())
                 );
+
                 wcharConverter = new char[sizeof(Temp.aslrDetails)];
                 wcstombs(wcharConverter, Temp.aslrDetails, sizeof(Temp.aslrDetails));
-                ui.tableWidget->setItem(row, 10,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 wcharConverter = new char[sizeof(Temp.depDetails)];
                 wcstombs(wcharConverter, Temp.depDetails, sizeof(Temp.depDetails));
-                ui.tableWidget->setItem(row, 11,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
+
                 wcharConverter = new char[sizeof(Temp.parentName)];
                 wcstombs(wcharConverter, Temp.parentName, sizeof(Temp.parentName));
-                ui.tableWidget->setItem(row, 12,
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
                         wcharConverter
                     )
                 );
                 delete[] wcharConverter;
-                ui.tableWidget->setItem(row, 13,
+
+                ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.parentPID).c_str()));
+
+                //DLL Listing block
+               /* connect(ui.tableWidget, SIGNAL(cellClicked(int, int)), this, SLOT(myCellClicked(int, int)));
+                QPushButton* button = new QPushButton("DLL List");
+                ui.tableWidget->setItem(
+                    row,
+                    col++,
+                    new QTableWidgetItem()
+                );*/
                 //ui.tableWidget->selectColumn(DLL);
             }
         }

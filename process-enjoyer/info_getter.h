@@ -3,6 +3,14 @@
 #include "processenjoyer.h"
 #include "ui_processenjoyer.h"
 #include <locale.h>
+#include <qpushbutton.h>
+
+#include <QApplication>
+#include <QTableView>
+#include <QStandardItemModel>
+#include <QStyledItemDelegate>
+#include <QHeaderView>
+#include <QPushButton>
 
 #define MAX_COUNT 1024
 

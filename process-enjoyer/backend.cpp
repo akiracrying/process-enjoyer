@@ -1,8 +1,10 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "backend.h"
 
-process Processes[MAX_COUNT] = { 0 };
-size_t valid_proc_counter = 0;
+process Processes[MAX_COUNT] = { 0 };               /* Array of structures of all processes in the system */
+size_t valid_proc_counter = 0;                      /* Real count of processes in system */
+
+char fileIntegrity[MAX_DETAILS_LENGTH] = { 0 };     /* Info about Mandatory level of file */
 
 void getOwnerAndSid(HANDLE hProcess)
 {
@@ -150,58 +152,6 @@ void getParentPidAndName(DWORD processID)
     CloseHandle(h);
 }
 
-void getIntegrityLevel(HANDLE hProcess)
-{
-    HANDLE hToken;
-    DWORD returnLength;
-
-    if (OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_QUERY_SOURCE, &hToken))
-    {
-        if (!GetTokenInformation(hToken, TokenIntegrityLevel, NULL, 0, &returnLength))
-        {
-            DWORD errorCode = GetLastError();
-            if (errorCode != ERROR_INSUFFICIENT_BUFFER || returnLength == 0)
-            {
-                fprintf(stdout, "[Error]: GetTokenInformation - %d\n", GetLastError());
-                CloseHandle(hToken);
-                return;
-            }
-
-            PTOKEN_MANDATORY_LABEL pIntegrityLevel = (PTOKEN_MANDATORY_LABEL)malloc(returnLength);
-            if (pIntegrityLevel != NULL)
-            {
-                if (GetTokenInformation(hToken, TokenIntegrityLevel, pIntegrityLevel, returnLength, &returnLength))
-                {
-                    DWORD integrityLevel = *GetSidSubAuthority(pIntegrityLevel->Label.Sid, (DWORD)(UCHAR)(*GetSidSubAuthorityCount(pIntegrityLevel->Label.Sid) - 1));
-
-                    if (integrityLevel < SECURITY_MANDATORY_LOW_RID)
-                    {
-                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("Untrusted"), MAX_DETAILS_LENGTH);
-                    }
-                    else if (integrityLevel == SECURITY_MANDATORY_LOW_RID)
-                    {
-                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("Low"), MAX_DETAILS_LENGTH);
-                    }
-                    else if (integrityLevel >= SECURITY_MANDATORY_MEDIUM_RID && integrityLevel < SECURITY_MANDATORY_HIGH_RID)
-                    {
-                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("Medium"), MAX_DETAILS_LENGTH);
-                    }
-                    else if (integrityLevel >= SECURITY_MANDATORY_HIGH_RID && integrityLevel < SECURITY_MANDATORY_SYSTEM_RID)
-                    {
-                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("High"), MAX_DETAILS_LENGTH);
-                    }
-                    else if (integrityLevel >= SECURITY_MANDATORY_SYSTEM_RID)
-                    {
-                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("System"), MAX_DETAILS_LENGTH);
-                    }
-                }
-                free(pIntegrityLevel);
-            }
-        }
-        CloseHandle(hToken);
-    }
-}
-
 void getProcName(HANDLE hProcess)
 {
     HMODULE hMod;
@@ -211,6 +161,7 @@ void getProcName(HANDLE hProcess)
     {
         GetModuleBaseName(hProcess, hMod, Processes[valid_proc_counter].processName, MAX_NAME_LENGTH);
     }
+    //printf("Error: %d", GetLastError());
 }
 
 void getProcDlls(HANDLE hProcess)
@@ -301,8 +252,13 @@ void getProcDescryption(const wchar_t* fileName)
         wchar_t fileDescriptionKey[256];
         wsprintf(fileDescriptionKey, L"\\StringFileInfo\\%04x%04x\\FileDescription", translationArray[i].wLanguage, translationArray[i].wCodePage);
 
+        TCHAR* descript = NULL;
+
         UINT fileDescriptionSize;
-        VerQueryValue(versionInfo, fileDescriptionKey, (LPVOID*)&Processes[valid_proc_counter].procDescryption, &fileDescriptionSize);
+        VerQueryValue(versionInfo, fileDescriptionKey, (LPVOID*)&descript, &fileDescriptionSize);
+
+        if (descript != NULL)
+            wcsncpy(Processes[valid_proc_counter].procDescryption, descript, MAX_NAME_LENGTH);
     }
 }
 
@@ -310,12 +266,15 @@ void processInfo(DWORD processID)
 {
     Processes[valid_proc_counter].PID = processID;
 
-    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID);
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, processID); // PROCESS_QUERY_INFORMATION | PROCESS_VM_READ
+
+    //printf("Error: %d", GetLastError());
 
     if (!hProcess)
     {
         /* Doesn't matter - usually it's SYSTEM process*/
         return;
+        //hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processID);
     }
 
     getOwnerAndSid(hProcess);
@@ -336,7 +295,7 @@ void processInfo(DWORD processID)
 
     getDepAndAslr(hProcess);
 
-    fprintf(stdout, "procDescryption: %ws\n", Processes[valid_proc_counter].procDescryption);
+    /*fprintf(stdout, "procDescryption: %ws\n", Processes[valid_proc_counter].procDescryption);
     fprintf(stdout, "processName: %ws\n", Processes[valid_proc_counter].processName);
     fprintf(stdout, "PID: %lu\n", Processes[valid_proc_counter].PID);
     fprintf(stdout, "pathProcessExe: %ws\n", Processes[valid_proc_counter].pathProcessExe);
@@ -348,7 +307,7 @@ void processInfo(DWORD processID)
     fprintf(stdout, "parentName: %ws\n", Processes[valid_proc_counter].parentName);
     fprintf(stdout, "parentPID: %lu\n", Processes[valid_proc_counter].parentPID);
     fprintf(stdout, "integrityLevel: %ws\n", Processes[valid_proc_counter].integrityLevel);
-    fprintf(stdout, "____________________________________________________________________\n");
+    fprintf(stdout, "____________________________________________________________________\n");*/
 
     CloseHandle(hProcess);
     ++valid_proc_counter;
@@ -375,7 +334,7 @@ void processesDatabase()
     }
 }
 
-BOOL turnDebugPrivilege(DWORD sePrivilege)
+BOOL turnDebugPrivilege()
 {
     HANDLE hToken;
 
@@ -396,7 +355,7 @@ BOOL turnDebugPrivilege(DWORD sePrivilege)
     TOKEN_PRIVILEGES tp;
     tp.PrivilegeCount = 1;
     tp.Privileges[0].Luid = luidDebug;
-    tp.Privileges[0].Attributes = sePrivilege;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED; // disable - 0
 
     if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL))
     {
@@ -415,6 +374,58 @@ BOOL turnDebugPrivilege(DWORD sePrivilege)
     CloseHandle(hToken);
 
     return TRUE;
+}
+
+void getIntegrityLevel(HANDLE hProcess)
+{
+    HANDLE hToken;
+    DWORD returnLength;
+
+    if (OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_QUERY_SOURCE, &hToken))
+    {
+        if (!GetTokenInformation(hToken, TokenIntegrityLevel, NULL, 0, &returnLength))
+        {
+            DWORD errorCode = GetLastError();
+            if (errorCode != ERROR_INSUFFICIENT_BUFFER || returnLength == 0)
+            {
+                fprintf(stdout, "[Error]: GetTokenInformation - %d\n", GetLastError());
+                CloseHandle(hToken);
+                return;
+            }
+
+            PTOKEN_MANDATORY_LABEL pIntegrityLevel = (PTOKEN_MANDATORY_LABEL)malloc(returnLength);
+            if (pIntegrityLevel != NULL)
+            {
+                if (GetTokenInformation(hToken, TokenIntegrityLevel, pIntegrityLevel, returnLength, &returnLength))
+                {
+                    DWORD integrityLevel = *GetSidSubAuthority(pIntegrityLevel->Label.Sid, (DWORD)(UCHAR)(*GetSidSubAuthorityCount(pIntegrityLevel->Label.Sid) - 1));
+
+                    if (integrityLevel < SECURITY_MANDATORY_LOW_RID)
+                    {
+                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("Untrusted"), MAX_DETAILS_LENGTH);
+                    }
+                    else if (integrityLevel == SECURITY_MANDATORY_LOW_RID)
+                    {
+                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("Low"), MAX_DETAILS_LENGTH);
+                    }
+                    else if (integrityLevel >= SECURITY_MANDATORY_MEDIUM_RID && integrityLevel < SECURITY_MANDATORY_HIGH_RID)
+                    {
+                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("Medium"), MAX_DETAILS_LENGTH);
+                    }
+                    else if (integrityLevel >= SECURITY_MANDATORY_HIGH_RID && integrityLevel < SECURITY_MANDATORY_SYSTEM_RID)
+                    {
+                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("High"), MAX_DETAILS_LENGTH);
+                    }
+                    else if (integrityLevel >= SECURITY_MANDATORY_SYSTEM_RID)
+                    {
+                        wcsncpy(Processes[valid_proc_counter].integrityLevel, TEXT("System"), MAX_DETAILS_LENGTH);
+                    }
+                }
+                free(pIntegrityLevel);
+            }
+        }
+        CloseHandle(hToken);
+    }
 }
 
 void changeProcIntegrity(DWORD processID, wchar_t* integrity)
@@ -459,8 +470,13 @@ void changeProcIntegrity(DWORD processID, wchar_t* integrity)
         return;
     }
 
-    PSID lowSid = { 0 };
-    if (!ConvertStringSidToSid(L"S-1-16-4096", &lowSid))
+    // Low (SID: S-1-16-4096), 
+    // Medium (SID: S-1-16-8192) 
+    // High (SID: S-1-16-12288) 
+    // System (SID: S-1-16-16384)
+
+    PSID levelSid = { 0 };
+    if (!ConvertStringSidToSid(L"S-1-16-4096", &levelSid))
     {
         printf("[Error]: ConvertStringSidToSid - %d\n", GetLastError());
         free(pIntegrityLabel);
@@ -469,7 +485,7 @@ void changeProcIntegrity(DWORD processID, wchar_t* integrity)
         return;
     }
 
-    pIntegrityLabel->Label.Sid = lowSid;
+    pIntegrityLabel->Label.Sid = levelSid;
 
     if (!SetTokenInformation(hToken, TokenIntegrityLevel, pIntegrityLabel, dwSize))
     {
@@ -485,103 +501,124 @@ void changeProcIntegrity(DWORD processID, wchar_t* integrity)
     CloseHandle(hProcess);
 }
 
-void getFileIntegrity(const wchar_t* filePath)
+void getFileIntegrityLevel(WCHAR* file_name)
 {
-    //LPCWSTR fileName = L"D:\\service\\log.txt";
+    DWORD integrityLevel = SECURITY_MANDATORY_UNTRUSTED_RID;
+    PSECURITY_DESCRIPTOR pSD = NULL;
+    PACL acl = 0;
 
-    //PACL Sacl;
-    //PSECURITY_DESCRIPTOR pSD;
-    //PULONG pil = (PULONG)SECURITY_MANDATORY_MEDIUM_RID;// default LABEL
+    //извлекает копию дескриптора безопасности для объекта, указанного по имени.
+    GetNamedSecurityInfo(file_name, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, &acl, &pSD);
 
-    //ULONG err = GetNamedSecurityInfoW(fileName, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, 0, 0, 0, &Sacl, &pSD);
+    if (0 != acl && 0 < acl->AceCount)
+    {
+        SYSTEM_MANDATORY_LABEL_ACE* ace = 0;
+        //получает указатель на запись управления доступом (ACE) в списке управления доступом (ACL).
+        if (GetAce(acl, 0, reinterpret_cast<void**>(&ace)))
+        {
+            SID* sid = reinterpret_cast<SID*>(&ace->SidStart);
+            integrityLevel = sid->SubAuthority[0];
+        }
+    }
 
-    //printf("%d", GetLastError());
+    PWSTR stringSD;
+    ULONG stringSDLen = 0;
 
-    //if (!err)
-    //{
-    //    if (Sacl)
-    //    {
-    //        union {
-    //            PVOID Ace;
-    //            PSYSTEM_MANDATORY_LABEL_ACE pLabel;
-    //            PACE_HEADER pHeader;
-    //        };
+    //преобразует дескриптор безопасности в строковый формат
+    ConvertSecurityDescriptorToStringSecurityDescriptorW(pSD, SDDL_REVISION_1, LABEL_SECURITY_INFORMATION, &stringSD, &stringSDLen);
 
-    //        err = ERROR_GEN_FAILURE;
+    if (pSD) LocalFree(pSD);
 
-    //        ACL_SIZE_INFORMATION asi;
-
-    //        if (GetAclInformation(Sacl, &asi, sizeof(asi), AclSizeInformation))
-    //        {
-    //            PSID Sid;
-
-    //            union {
-    //                PUCHAR pc;
-    //                PULONG pl;
-    //            };
-
-    //            static SID_IDENTIFIER_AUTHORITY LabelAuth = SECURITY_MANDATORY_LABEL_AUTHORITY;
-
-    //            switch (asi.AceCount)
-    //            {
-    //            case 1:
-    //                if (GetAce(Sacl, 0, &Ace))
-    //                {
-    //                    if (pHeader->AceType == SYSTEM_MANDATORY_LABEL_ACE_TYPE)
-    //                    {
-    //                        Sid = &pLabel->SidStart;
-
-    //                        if (pc = GetSidSubAuthorityCount(Sid))
-    //                        {
-    //                            if (*pc == 1 && !memcmp(&LabelAuth, GetSidIdentifierAuthority(Sid), sizeof(SID_IDENTIFIER_AUTHORITY)))
-    //                            {
-    //                                if (pl = GetSidSubAuthority(Sid, 0))
-    //                                {
-    //                                    *pil = *pl;
-    //            case 0:
-    //                err = ERROR_SUCCESS;
-    //                                }
-    //                            }
-    //                        }
-    //                    }
-    //                }
-    //                break;
-    //            }
-    //        }
-    //    }
-
-    //    LocalFree(pSD);
-    //}
+    if (integrityLevel == 0x0000) strcpy(fileIntegrity, "Untrusted");
+    else if (integrityLevel == 0x1000)  strcpy(fileIntegrity, "Low"); 
+    else if (integrityLevel == 0x2000)  strcpy(fileIntegrity, "Medium"); 
+    else if (integrityLevel == 0x3000) strcpy(fileIntegrity, "High"); 
+    else if (integrityLevel == 0x4000) strcpy(fileIntegrity, "System"); 
+    else strcpy(fileIntegrity, "Error"); 
 }
 
-void changeFileIntegrity()
+void changeFileIntegrityLevel(const char* FileName, const char* level)
 {
-    LPCWSTR filePath = L"D:\\service\\log.txt";
+    LPWSTR file_name = new wchar_t[MAX_PATH];
+    mbstowcs(file_name, FileName, strlen(FileName) + 1);
+    LPCWSTR INTEGRITY_SDDL_SACL_W;
+    if (!strcmp(level, "Low")) INTEGRITY_SDDL_SACL_W = L"S:(ML;;NR;;;LW)";
+    else if (!strcmp(level, "Medium"))	INTEGRITY_SDDL_SACL_W = L"S:(ML;;NR;;;ME)";
+    else INTEGRITY_SDDL_SACL_W = L"S:(ML;;NR;;;HI)";
 
-    PSECURITY_DESCRIPTOR pSecurityDescriptor;
-    if (!ConvertStringSecurityDescriptorToSecurityDescriptor(L"S:(ML;;NX;;;LW)", SDDL_REVISION_1, &pSecurityDescriptor, NULL))
-    {
-        fprintf(stdout, "[Error]: ConvertStringSecurityDescriptorToSecurityDescriptor - %d", GetLastError());
-        return;
-    }
+    DWORD dwErr = ERROR_SUCCESS;
+    PSECURITY_DESCRIPTOR pSD = NULL;
 
-    // Set the security descriptor on the file
-    if (SetNamedSecurityInfo((LPWSTR)filePath, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, (PACL)pSecurityDescriptor) != ERROR_SUCCESS)
-    {
-        fprintf(stdout, "[Error]: SetNamedSecurityInfo - %d", GetLastError());
-        LocalFree(pSecurityDescriptor);
-        return;
+    PACL pSacl = NULL;
+    BOOL fSaclPresent = FALSE;
+    BOOL fSaclDefaulted = FALSE;
+
+    if (ConvertStringSecurityDescriptorToSecurityDescriptorW(INTEGRITY_SDDL_SACL_W, SDDL_REVISION_1, &pSD, NULL))
+    { 
+        if (GetSecurityDescriptorSacl(pSD, &fSaclPresent, &pSacl, &fSaclDefaulted))
+        {            
+            dwErr = SetNamedSecurityInfoW((LPWSTR)file_name, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, pSacl);
+            if (dwErr == ERROR_SUCCESS)
+            {
+                delete[] file_name;
+                printf("Complete!");
+                return;
+            }
+            else
+            {
+                char temp[50];
+                sprintf(temp, "SetNamedSecurityInfoW is faild, error: %i", (int)GetLastError());
+                printf("%s\n", temp);
+                return;
+            }
+        }
+        else
+        {
+            char temp[50];
+            sprintf(temp, "GetSecurityDescriptorSacl is faild, error: %i", (int)GetLastError());
+            printf("%s", temp);
+            return;
+        }
     }
-    LocalFree(pSecurityDescriptor);
+    else
+    {
+        LocalFree(pSD);
+        char temp[100];
+        sprintf(temp, "ConvertStringSecurityDescriptorToSecurityDescriptorW is faild, error: %i", (int)GetLastError());
+        printf("%s", temp);
+    }
+    delete[] file_name;
+    printf("Complete!");
+}
+
+void sendDatabase(HANDLE hPipe)
+{
+    DWORD dwRead;
+    DWORD dwWritten;
+    process Temp = { 0 };
+
+    for (size_t i = 0; i < valid_proc_counter; ++i)
+    {
+        while (1)
+        {
+            WriteFile(hPipe, &Processes[i], sizeof(Processes[i]), &dwWritten, NULL);
+
+            if (ReadFile(hPipe, &Temp, sizeof(Temp), &dwRead, NULL) != FALSE)
+            {
+                if (wcscmp(Processes[i].processName, Temp.processName) == 0)
+                {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void establishPipe()
 {
-    HANDLE hPipe;
-
-    hPipe = CreateNamedPipe(TEXT("\\\\.\\pipe\\Pipe"),
+    HANDLE hPipe = CreateNamedPipe(TEXT("\\\\.\\pipe\\Pipe"),
         PIPE_ACCESS_DUPLEX,
-        PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+        PIPE_TYPE_MESSAGE | PIPE_TYPE_MESSAGE | PIPE_WAIT, //BYTE
         1,
         1024 * 16,
         1024 * 16,
@@ -596,74 +633,83 @@ void establishPipe()
 
     //////////////////////// GET DATABASE OF PROCESS //////////////////////////////
 
-    DWORD sePrivilege = SE_PRIVILEGE_ENABLED;
-    turnDebugPrivilege(sePrivilege);
-
+    turnDebugPrivilege();
     processesDatabase();
-
-    sePrivilege = 0;
-    turnDebugPrivilege(sePrivilege);
 
     //////////////////////// SEND DATABASE TO GUI //////////////////////////////
 
-    DWORD dwRead;
-    DWORD dwWritten;
-    wchar_t buffer[1024] = { 0 };
+    DWORD dwRead = 0;
+    DWORD dwWritten = 0;
+    WCHAR buffer[100] = { 0 };
 
     while (1)
     {
         if (ConnectNamedPipe(hPipe, NULL) != FALSE)   // wait for GUI to connect to the pipe
         {
-            if (ReadFile(hPipe, buffer, sizeof(buffer) - 1, &dwRead, NULL) != FALSE)
-            {
-                /* Just hello message to initiate the process of sending the Database */
-                fprintf(stdout, "%ws", buffer);
-            }
-
-            WriteFile(hPipe, &valid_proc_counter, sizeof(valid_proc_counter), &dwWritten, NULL);
-
-            for (size_t i = 0; i < valid_proc_counter; ++i)
-            {
-                WriteFile(hPipe, Processes[i].processName, sizeof(Processes[i].processName), &dwWritten, NULL);
-                /*WriteFile(hPipe, &Processes[i].PID, sizeof(Processes[i].PID), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].pathProcessExe, sizeof(Processes[i].pathProcessExe), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].processOwner, sizeof(Processes[i].processOwner), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].SID, sizeof(Processes[i].SID), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].procType, sizeof(Processes[i].procType), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].aslrDetails, sizeof(Processes[i].aslrDetails), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].depDetails, sizeof(Processes[i].depDetails), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].parentName, sizeof(Processes[i].parentName), &dwWritten, NULL);
-                WriteFile(hPipe, &Processes[i].parentPID, sizeof(Processes[i].parentPID), &dwWritten, NULL);
-                WriteFile(hPipe, Processes[i].integrityLevel, sizeof(Processes[i].integrityLevel), &dwWritten, NULL);*/
-            }
-
-            //WriteFile(hPipe, "Hello too\n", 12, &dwWritten, NULL);
+            sendDatabase(hPipe);
         }
 
-        DisconnectNamedPipe(hPipe);
-    }
+        while (1)
+        {
+            if (ReadFile(hPipe, buffer, sizeof(buffer), &dwRead, NULL) != FALSE)
+            {
+                int command = buffer[0] - 48;
+                WCHAR* context = { 0 };
+                WCHAR* pointer = &buffer[2];
+                WCHAR* integrity;
+                WCHAR* procId;
+                DWORD processID;
+                WCHAR* fileName;
 
-    CloseHandle(hPipe);
+                switch (command)
+                {
+                case DATABASE:
+                    processesDatabase();
+                    sendDatabase(hPipe);
+                    break;
+
+                case CHANGE_INTEGRITY:
+                    integrity = wcstok_s(pointer, L" \0", &context);
+                    procId = wcstok_s(NULL, L" \0", &context);
+                    processID = _wtoi(procId);
+                    changeProcIntegrity(processID, integrity);
+                    break;
+
+                case MANDATORY:
+                    fileName = wcstok_s(pointer, L"\0", &context);
+                    getFileIntegrityLevel(fileName);
+                    break;
+
+                case CHANGE_MANDATORY:
+                    break;
+
+                case DISCONNECT:
+                    DisconnectNamedPipe(hPipe);
+                    CloseHandle(hPipe);
+                    break;
+
+                default:
+                    break;
+                }
+            }
+        }
+    }
 }
 
 int main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
 
-    //establishPipe();
+    establishPipe();
 
-    DWORD sePrivilege = SE_PRIVILEGE_ENABLED;
-    turnDebugPrivilege(sePrivilege);
+    //DWORD sePrivilege = SE_PRIVILEGE_ENABLED;
+    //turnDebugPrivilege(sePrivilege);
 
-    getFileIntegrity(L"D:\\service\\log.txt");
-    //changeFileIntegrity();
-    //getFileIntegrity(L"D:\\service\\log.txt");
+    ////processesDatabase();
 
-    processesDatabase();
+    //sePrivilege = 0;
+    //turnDebugPrivilege(sePrivilege);
 
-    sePrivilege = 0;
-    turnDebugPrivilege(sePrivilege);
-
-    system("pause");
+    //system("pause");
     return 0;
 }

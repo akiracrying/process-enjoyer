@@ -34,7 +34,7 @@ void changeProcIntegrity(DWORD processID, wchar_t* integrity);
 
 /* Get File information */
 void getFileIntegrityLevel(WCHAR* file_name);
-void changeFileIntegrityLevel(const char* FileName, const char* level);
+void changeFileIntegrityLevel(WCHAR* file_name, WCHAR* integrity);
 
 /* Functions to collect full info about all processes */
 void processInfo(DWORD processID);

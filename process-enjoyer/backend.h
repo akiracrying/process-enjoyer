@@ -15,29 +15,37 @@
 
 #define MAX_COUNT 1024
 
-#define MAX_NAME_LENGTH		256
+#define MAX_NAME_LENGTH		64
 #define MAX_DETAILS_LENGTH	32
 #define MAX_TYPE_LENGTH		7
 
-/* YES, these are not getters - just load info about process to struct process */
+/* Get Process fields */
 
-void getOwnerAndSid(HANDLE);
-void getDepAndAslr(HANDLE);
-void getParentPidAndName(DWORD);
-void getIntegrityLevel(HANDLE);
-void getProcName(HANDLE);
-void getProcDlls(HANDLE);
-void getProcPathToExe(HANDLE);
-void getProcType(HANDLE);
+void getOwnerAndSid(HANDLE hProcess);
+void getDepAndAslr(HANDLE hProcess);
+void getParentPidAndName(DWORD processID);
+void getProcName(HANDLE hProcess);
+void getProcDlls(HANDLE hProcess);
+void getProcPathToExe(HANDLE hProcess);
+void getProcType(HANDLE hProcess);
+void getProcDescryption(const wchar_t* fileName);
+void getIntegrityLevel(HANDLE hProcess);
+void changeProcIntegrity(DWORD processID, wchar_t* integrity);
 
-void processInfo(DWORD);
+/* Get File information */
+void getFileIntegrityLevel(WCHAR* file_name);
+void changeFileIntegrityLevel(const char* FileName, const char* level);
+
+/* Functions to collect full info about all processes */
+void processInfo(DWORD processID);
 void processesDatabase();
 
-BOOL turnDebugPrivilege(DWORD);
-void changeProcIntegrity(DWORD, wchar_t*);
+/* Sending information to GUI through pipe */
+void sendDatabase(HANDLE hPipe);
+void establishPipe();
 
-void getFileIntegrity(const wchar_t*);
-void changeFileIntegrity();
+/* Auxiliary function (maybe useless) */
+BOOL turnDebugPrivilege();
 
 typedef struct process
 {
@@ -48,7 +56,7 @@ typedef struct process
 	wchar_t SID[MAX_NAME_LENGTH];
 	wchar_t procType[MAX_TYPE_LENGTH];
 	wchar_t integrityLevel[MAX_DETAILS_LENGTH];
-	wchar_t* procDescryption;
+	wchar_t procDescryption[MAX_NAME_LENGTH];
 
 	BOOL CLR;
 	BOOL ASLR;
@@ -61,3 +69,12 @@ typedef struct process
 
 	wchar_t processDllsName[MAX_COUNT][MAX_NAME_LENGTH];
 }process;
+
+enum Command
+{
+	DATABASE,
+	CHANGE_INTEGRITY,
+	MANDATORY,
+	CHANGE_MANDATORY,
+	DISCONNECT
+};

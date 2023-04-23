@@ -4,7 +4,7 @@
 process Processes[MAX_COUNT] = { 0 };               /* Array of structures of all processes in the system */
 size_t valid_proc_counter = 0;                      /* Real count of processes in system */
 
-char fileIntegrity[MAX_DETAILS_LENGTH] = { 0 };     /* Info about Mandatory level of file */
+WCHAR fileIntegrity[MAX_DETAILS_LENGTH] = { 0 };     /* Info about Mandatory level of file */
 
 void getOwnerAndSid(HANDLE hProcess)
 {
@@ -476,7 +476,7 @@ void changeProcIntegrity(DWORD processID, wchar_t* integrity)
     // System (SID: S-1-16-16384)
 
     PSID levelSid = { 0 };
-    if (!ConvertStringSidToSid(L"S-1-16-4096", &levelSid))
+    if (!ConvertStringSidToSid((LPCWSTR)integrity, &levelSid))
     {
         printf("[Error]: ConvertStringSidToSid - %d\n", GetLastError());
         free(pIntegrityLabel);
@@ -507,13 +507,11 @@ void getFileIntegrityLevel(WCHAR* file_name)
     PSECURITY_DESCRIPTOR pSD = NULL;
     PACL acl = 0;
 
-    //извлекает копию дескриптора безопасности для объекта, указанного по имени.
     GetNamedSecurityInfo(file_name, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, &acl, &pSD);
 
     if (0 != acl && 0 < acl->AceCount)
     {
         SYSTEM_MANDATORY_LABEL_ACE* ace = 0;
-        //получает указатель на запись управления доступом (ACE) в списке управления доступом (ACL).
         if (GetAce(acl, 0, reinterpret_cast<void**>(&ace)))
         {
             SID* sid = reinterpret_cast<SID*>(&ace->SidStart);
@@ -524,71 +522,45 @@ void getFileIntegrityLevel(WCHAR* file_name)
     PWSTR stringSD;
     ULONG stringSDLen = 0;
 
-    //преобразует дескриптор безопасности в строковый формат
     ConvertSecurityDescriptorToStringSecurityDescriptorW(pSD, SDDL_REVISION_1, LABEL_SECURITY_INFORMATION, &stringSD, &stringSDLen);
 
     if (pSD) LocalFree(pSD);
 
-    if (integrityLevel == 0x0000) strcpy(fileIntegrity, "Untrusted");
-    else if (integrityLevel == 0x1000)  strcpy(fileIntegrity, "Low"); 
-    else if (integrityLevel == 0x2000)  strcpy(fileIntegrity, "Medium"); 
-    else if (integrityLevel == 0x3000) strcpy(fileIntegrity, "High"); 
-    else if (integrityLevel == 0x4000) strcpy(fileIntegrity, "System"); 
-    else strcpy(fileIntegrity, "Error"); 
+    if (integrityLevel == 0x0000) wcscpy(fileIntegrity, L"Untrusted");
+    else if (integrityLevel == 0x1000)  wcscpy(fileIntegrity, L"Low");
+    else if (integrityLevel == 0x2000)  wcscpy(fileIntegrity, L"Medium");
+    else if (integrityLevel == 0x3000) wcscpy(fileIntegrity, L"High");
+    else if (integrityLevel == 0x4000) wcscpy(fileIntegrity, L"System");
+    else wcscpy(fileIntegrity, L"Error");
 }
 
-void changeFileIntegrityLevel(const char* FileName, const char* level)
+void changeFileIntegrityLevel(WCHAR* file_name, WCHAR* integrity)
 {
-    LPWSTR file_name = new wchar_t[MAX_PATH];
-    mbstowcs(file_name, FileName, strlen(FileName) + 1);
-    LPCWSTR INTEGRITY_SDDL_SACL_W;
-    if (!strcmp(level, "Low")) INTEGRITY_SDDL_SACL_W = L"S:(ML;;NR;;;LW)";
-    else if (!strcmp(level, "Medium"))	INTEGRITY_SDDL_SACL_W = L"S:(ML;;NR;;;ME)";
-    else INTEGRITY_SDDL_SACL_W = L"S:(ML;;NR;;;HI)";
-
-    DWORD dwErr = ERROR_SUCCESS;
     PSECURITY_DESCRIPTOR pSD = NULL;
 
     PACL pSacl = NULL;
     BOOL fSaclPresent = FALSE;
     BOOL fSaclDefaulted = FALSE;
 
-    if (ConvertStringSecurityDescriptorToSecurityDescriptorW(INTEGRITY_SDDL_SACL_W, SDDL_REVISION_1, &pSD, NULL))
+    if (ConvertStringSecurityDescriptorToSecurityDescriptorW((LPCWSTR)integrity, SDDL_REVISION_1, &pSD, NULL))
     { 
         if (GetSecurityDescriptorSacl(pSD, &fSaclPresent, &pSacl, &fSaclDefaulted))
         {            
-            dwErr = SetNamedSecurityInfoW((LPWSTR)file_name, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, pSacl);
-            if (dwErr == ERROR_SUCCESS)
+            if (!SetNamedSecurityInfoW(file_name, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, pSacl))
             {
-                delete[] file_name;
-                printf("Complete!");
-                return;
-            }
-            else
-            {
-                char temp[50];
-                sprintf(temp, "SetNamedSecurityInfoW is faild, error: %i", (int)GetLastError());
-                printf("%s\n", temp);
-                return;
+                fprintf(stdout, "[Error]: SetNamedSecurityInfoW - %d\n", GetLastError());
             }
         }
         else
         {
-            char temp[50];
-            sprintf(temp, "GetSecurityDescriptorSacl is faild, error: %i", (int)GetLastError());
-            printf("%s", temp);
-            return;
+            fprintf(stdout, "[Error]: GetSecurityDescriptorSacl - %d\n", GetLastError());
         }
     }
     else
     {
-        LocalFree(pSD);
-        char temp[100];
-        sprintf(temp, "ConvertStringSecurityDescriptorToSecurityDescriptorW is faild, error: %i", (int)GetLastError());
-        printf("%s", temp);
+        fprintf(stdout, "[Error]: ConvertStringSecurityDescriptorToSecurityDescriptorW - %d\n", GetLastError());
     }
-    delete[] file_name;
-    printf("Complete!");
+    LocalFree(pSD);
 }
 
 void sendDatabase(HANDLE hPipe)
@@ -640,7 +612,7 @@ void establishPipe()
 
     DWORD dwRead = 0;
     DWORD dwWritten = 0;
-    WCHAR buffer[100] = { 0 };
+    WCHAR buffer[128] = { 0 };
 
     while (1)
     {
@@ -653,7 +625,7 @@ void establishPipe()
         {
             if (ReadFile(hPipe, buffer, sizeof(buffer), &dwRead, NULL) != FALSE)
             {
-                int command = buffer[0] - 48;
+                int command = buffer[0] - 48; // 1 Low 4242
                 WCHAR* context = { 0 };
                 WCHAR* pointer = &buffer[2];
                 WCHAR* integrity;
@@ -672,6 +644,11 @@ void establishPipe()
                     integrity = wcstok_s(pointer, L" \0", &context);
                     procId = wcstok_s(NULL, L" \0", &context);
                     processID = _wtoi(procId);
+
+                    if (!wcscmp(integrity, L"Low")) wcscpy(integrity, L"S-1-16-4096");
+                    else if (!wcscmp(integrity, L"Medium")) wcscpy(integrity, L"S-1-16-8192");
+                    else wcscpy(integrity, L"S-1-16-12288");
+
                     changeProcIntegrity(processID, integrity);
                     break;
 
@@ -681,6 +658,14 @@ void establishPipe()
                     break;
 
                 case CHANGE_MANDATORY:
+                    fileName = wcstok_s(pointer, L" \0", &context);
+                    integrity = wcstok_s(NULL, L" \0", &context);
+
+                    if (!wcscmp(integrity, L"Low")) wcscpy(integrity, L"S:(ML;;NR;;;LW)");
+                    else if (!wcscmp(integrity, L"Medium")) wcscpy(integrity, L"S:(ML;;NR;;;ME)"); 
+                    else wcscpy(integrity, L"S:(ML;;NR;;;HI)"); 
+
+                    changeFileIntegrityLevel(fileName, integrity);
                     break;
 
                 case DISCONNECT:
@@ -700,7 +685,10 @@ int main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
 
-    establishPipe();
+    //establishPipe();
+
+    //changeFileIntegrityLevel((WCHAR*)L"C:\\Programs_6_sem\\BSIT_LABA_1\\x64\\Release", (WCHAR*)L"S:(ML;;NR;;;LW)");
+    getFileIntegrityLevel((WCHAR*)L"C:\\Programs_6_sem\\BSIT_LABA_1\\x64\\Release");
 
     //DWORD sePrivilege = SE_PRIVILEGE_ENABLED;
     //turnDebugPrivilege(sePrivilege);

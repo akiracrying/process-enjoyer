@@ -14,7 +14,7 @@
 
 #define MAX_COUNT 1024
 
-#define MAX_NAME_LENGTH 256
+#define MAX_NAME_LENGTH 64
 #define MAX_DETAILS_LENGTH 32
 #define MAX_TYPE_LENGTH 7
 enum actions{
@@ -42,7 +42,7 @@ typedef struct process {
 	wchar_t SID[MAX_NAME_LENGTH];
 	wchar_t procType[MAX_TYPE_LENGTH];
 	wchar_t integrityLevel[MAX_DETAILS_LENGTH];
-	wchar_t* procDescryption;
+	wchar_t procDescryption[MAX_NAME_LENGTH];
 
 	BOOL CLR;
 	BOOL ASLR;

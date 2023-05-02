@@ -9,7 +9,7 @@ int main(int argc, char *argv[]){
     QApplication a(argc, argv);
 
     setlocale(LC_ALL, "Russian");
-    QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
+   // QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
   /*  QTextCodec* russian = QTextCodec::codecForName("CP1251");
     QTextCodec::setCodecForLocale(russian);*/
     processenjoyer w;

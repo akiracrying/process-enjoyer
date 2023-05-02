@@ -2,8 +2,11 @@
 #include <Windows.h>
 #include "processenjoyer.h"
 #include "ui_processenjoyer.h"
+#include "ui_dlllist.h"
 #include <locale.h>
 #include <qpushbutton.h>
+#include <iostream>
+#include <codecvt>
 
 #include <QApplication>
 #include <QTableView>

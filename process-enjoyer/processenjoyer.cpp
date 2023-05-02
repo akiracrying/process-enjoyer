@@ -36,16 +36,23 @@ processenjoyer::processenjoyer(QWidget* parent)
                 break;
             }
             //getProcessInfo(hPipe, &err, &Temp);
+
+            QByteArray encodedString;
+            auto toSysEnc = QStringDecoder(QStringDecoder::System);
+
             if (err != 1) {
                 ui.tableWidget->insertRow(ui.tableWidget->rowCount());
-     
+    
                 ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.PID).c_str()));
+
                 wcharConverter = new char[sizeof(Temp.processName)];
                 wcstombs(wcharConverter, Temp.processName, sizeof(Temp.processName));
+                encodedString = wcharConverter;
+                QString string = toSysEnc(encodedString);
                 ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
-                        wcharConverter
+                        string
                     )
                 );
                 delete[] wcharConverter;
@@ -61,9 +68,11 @@ processenjoyer::processenjoyer(QWidget* parent)
 
                 wcharConverter = new char[sizeof(Temp.processOwner)];
                 wcstombs(wcharConverter, Temp.processOwner, sizeof(Temp.processOwner));
+                encodedString = wcharConverter;
+                string = toSysEnc(encodedString);
                 ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(
-                        wcharConverter
+                        string
                     )
                 );
                 delete[] wcharConverter;
@@ -95,14 +104,16 @@ processenjoyer::processenjoyer(QWidget* parent)
                 );
                 delete[] wcharConverter;
 
-                //wcharConverter = new char[sizeof(Temp.procDescryption)];
-                //wcstombs(wcharConverter, Temp.procDescryption, sizeof(Temp.procDescryption));
-                //ui.tableWidget->setItem(row, 6,
-                //    new QTableWidgetItem(
-                //        wcharConverter
-                //    )
-                //);
-                //delete[] wcharConverter;
+                wcharConverter = new char[sizeof(Temp.procDescryption)];
+                wcstombs(wcharConverter, Temp.procDescryption, sizeof(Temp.procDescryption));
+                encodedString = wcharConverter;
+                string = toSysEnc(encodedString);
+                ui.tableWidget->setItem(row, col++,
+                    new QTableWidgetItem(
+                        string
+                    )
+                );
+                delete[] wcharConverter;
                 ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.CLR).c_str())
                 );
@@ -143,15 +154,40 @@ processenjoyer::processenjoyer(QWidget* parent)
                 ui.tableWidget->setItem(row, col++,
                     new QTableWidgetItem(std::to_string(Temp.parentPID).c_str()));
 
-                //DLL Listing block
-               /* connect(ui.tableWidget, SIGNAL(cellClicked(int, int)), this, SLOT(myCellClicked(int, int)));
-                QPushButton* button = new QPushButton("DLL List");
-                ui.tableWidget->setItem(
-                    row,
-                    col++,
-                    new QTableWidgetItem()
-                );*/
-                //ui.tableWidget->selectColumn(DLL);
+                QPushButton* DLLButton = new QPushButton("DLL_LIST");
+                ui.tableWidget->setCellWidget(row, col++,
+                    DLLButton
+                );
+
+                 QDialog* DllDialog = new QDialog;
+                 Ui_Dialog* DllUi = new Ui_Dialog;
+                 DllUi->tableWidget = new QTableWidget[sizeof(Temp.processDllsName + 10)];
+
+                 int dll_col = 0, dll_row = 0;
+                 for (int dll_count = 0; ; dll_count++) {
+                     wchar_t symb = Temp.processDllsName[dll_count][0];
+                     wchar_t nil = { '\0' };
+                     if (symb == nil) {
+                         break;
+                     }
+                     wcharConverter = new char[sizeof(Temp.processDllsName[dll_count])];
+                     wcstombs(wcharConverter, Temp.processDllsName[dll_count], sizeof(Temp.processDllsName[dll_count]));
+
+                     DllUi->tableWidget->setItem(dll_row++, dll_col,
+                         new QTableWidgetItem(
+                             wcharConverter
+                         )
+                     );
+                     delete[] wcharConverter;
+                 }
+
+                 DllUi->setupUi(DllDialog);
+                 connect(DllUi->okButton, SIGNAL(clicked()), DllDialog, SLOT(close()));
+
+
+                 //connect(DLLButton, SIGNAL(clicked()), this, SLOT(DllDialog->show()));
+                 connect(DLLButton, SIGNAL(clicked()), DllDialog, SLOT(exec()));
+
             }
         }
         CloseHandle(hPipe);

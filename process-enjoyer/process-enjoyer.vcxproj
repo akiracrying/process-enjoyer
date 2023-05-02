@@ -84,6 +84,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <QtRcc Include="processenjoyer.qrc" />
+    <QtUic Include="DLLlist.ui" />
     <QtUic Include="processenjoyer.ui" />
     <QtMoc Include="processenjoyer.h" />
     <ClCompile Include="info_getter.cpp" />

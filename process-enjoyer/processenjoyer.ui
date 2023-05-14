@@ -230,6 +230,100 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Segoe UI'; font-size:14pt;&quot;&gt;Программа сделана в 2023 году студентами Института кибербезопасности и защиты информации Тимофеем Цветковым и Егором Лавренко по дисциплине Модели безопасности компьютерных систем.&lt;br /&gt;Исключительно в образовательных целях.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
+        <widget class="QWidget" name="layoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>790</x>
+           <y>80</y>
+           <width>311</width>
+           <height>161</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QRadioButton" name="radioButton_12">
+            <property name="text">
+             <string>Low</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_13">
+            <property name="text">
+             <string>Medium</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_14">
+            <property name="text">
+             <string>High</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QLabel" name="label_3">
+         <property name="geometry">
+          <rect>
+           <x>790</x>
+           <y>10</y>
+           <width>571</width>
+           <height>61</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Calibri Light</family>
+           <pointsize>23</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Process Integrity level changing</string>
+         </property>
+        </widget>
+        <widget class="QLabel" name="label_4">
+         <property name="geometry">
+          <rect>
+           <x>790</x>
+           <y>240</y>
+           <width>241</width>
+           <height>41</height>
+          </rect>
+         </property>
+         <property name="font">
+          <font>
+           <family>Calibri Light</family>
+           <pointsize>23</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Process ID</string>
+         </property>
+        </widget>
+        <widget class="QPushButton" name="submButton_2">
+         <property name="geometry">
+          <rect>
+           <x>790</x>
+           <y>350</y>
+           <width>121</width>
+           <height>31</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>Submit</string>
+         </property>
+        </widget>
+        <widget class="QLineEdit" name="lineEdit_2">
+         <property name="geometry">
+          <rect>
+           <x>790</x>
+           <y>300</y>
+           <width>621</width>
+           <height>31</height>
+          </rect>
+         </property>
+        </widget>
         <widget class="QWidget" name="">
          <property name="geometry">
           <rect>
@@ -240,13 +334,6 @@ p, li { white-space: pre-wrap; }
           </rect>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="QRadioButton" name="radioButton_7">
-            <property name="text">
-             <string>Untrusted</string>
-            </property>
-           </widget>
-          </item>
           <item>
            <widget class="QRadioButton" name="radioButton_9">
             <property name="text">
@@ -265,13 +352,6 @@ p, li { white-space: pre-wrap; }
            <widget class="QRadioButton" name="radioButton_8">
             <property name="text">
              <string>High</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QRadioButton" name="radioButton_6">
-            <property name="text">
-             <string>System</string>
             </property>
            </widget>
           </item>

@@ -2,11 +2,9 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_processenjoyer.h"
+#include <Windows.h>
 
-enum error_codes {
-    NO_FILE = 228,
-    NOT_SELECTED = 1337,
-};
+
 class processenjoyer : public QMainWindow
 {
     Q_OBJECT
@@ -16,6 +14,9 @@ public:
     ~processenjoyer();
 
 private:
-    void setMandatoryLevel(Ui::processenjoyerClass ui, void* hPipe, unsigned long dwWritten);
+    HANDLE pipePtr;
+    void setMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten);
+    void setProcessIntegrity(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten);
+
     Ui::processenjoyerClass ui;
 };

@@ -7,6 +7,7 @@
 #include <qpushbutton.h>
 #include <iostream>
 #include <codecvt>
+#include <filesystem>
 
 #include <QApplication>
 #include <QTableView>
@@ -21,6 +22,13 @@
 #define MAX_NAME_LENGTH 64
 #define MAX_DETAILS_LENGTH 32
 #define MAX_TYPE_LENGTH 7
+enum error_codes {
+	NO_FILE = 1000,
+	NOT_SELECTED,
+	NO_SUCH_FILE,
+	NO_PID
+};
+
 enum actions{
 	PID =0,
 	PROCESS_NAME,

@@ -14,6 +14,7 @@
 #include <QStyledItemDelegate>
 #include <QHeaderView>
 #include <QPushButton>
+#include <QMessageBox>
 
 #define MAX_COUNT 1024
 
@@ -61,3 +62,4 @@ typedef struct process {
 
 
 void getProcessInfo(HANDLE, int*, process*);
+//void setMandatoryLevel(Ui::processenjoyerClass, HANDLE, DWORD, int*);

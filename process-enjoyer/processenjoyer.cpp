@@ -35,6 +35,14 @@ processenjoyer::processenjoyer(QWidget* parent)
             else {
                 break;
             }
+            wchar_t symb = proc_data.processName[0];
+            wchar_t nil = { '\0' };
+            wchar_t empty = { ' ' };
+
+            if (symb == nil || symb == empty) {
+                break;
+            }
+
 
             QByteArray encodedString;
             auto toSysEnc = QStringDecoder(QStringDecoder::System);
@@ -174,7 +182,6 @@ processenjoyer::processenjoyer(QWidget* parent)
                     table->insertRow(table->rowCount());
 
                     wchar_t symb = proc_data.processDllsName[dll_count][0];
-                    wchar_t nil = { '\0' };
                     if (symb == nil) {
                         break;
                     }
@@ -200,13 +207,93 @@ processenjoyer::processenjoyer(QWidget* parent)
 
             }
         }
-        CloseHandle(hPipe);
+        //CloseHandle(hPipe);
+
+        connect(ui.submButton, &QPushButton::clicked, this, [&]() {
+            emit setMandatoryLevel(ui, hPipe, dwWritten);
+        });
+
     }
 
     //delete[] Temp.procDescryption;
 }
 
+void processenjoyer::setMandatoryLevel(Ui::processenjoyerClass ui, void* hPipe, unsigned long dwWritten) {
+    //hPipe = CreateFile(TEXT("\\\\.\\pipe\\Pipe"), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
+    int err = 0;
+    if (hPipe != INVALID_HANDLE_VALUE) {
+        QString int_path = ui.lineEdit->text();
+        if (int_path.isEmpty() != 1) {
+            struct choice {
+                int UNTRUSTED; // 7
+                int LOW; // 9
+                int MEDIUM; // 10
+                int HIGH; // 8
+                int SYS; // 6
+            } int_lvl = {
+                ui.radioButton_7->isChecked(),
+                ui.radioButton_9->isChecked(),
+                ui.radioButton_10->isChecked(),
+                ui.radioButton_8->isChecked(),
+                ui.radioButton_8->isChecked(),
+            };
+            WCHAR* data = new WCHAR[int_path.length() + 6];
+            memset(data, 0, int_path.length() + 6 * sizeof(WCHAR));
 
+            std::wstring wideStr = int_path.toStdWString();
+            const wchar_t* wcharStr = wideStr.c_str();
+            data[0] = '3'; data[1] = ' ';
+
+            if (int_lvl.UNTRUSTED) {
+                //
+            }
+            else if (int_lvl.LOW) {
+                data[2] = 'L'; data[3] = 'o'; data[4] = 'w';
+                wcscpy(&data[5], wcharStr);
+                WriteFile(hPipe, &data, sizeof(data), &dwWritten, NULL);
+            }
+            else if (int_lvl.MEDIUM) {
+                data[2] = 'M'; data[3] = 'e'; data[4] = 'd'; data[5] = 'i'; data[6] = 'u'; data[7] = 'm';
+                wcscpy(&data[8], wcharStr);
+                WriteFile(hPipe, &data, sizeof(data), &dwWritten, NULL);
+            }
+            else if (int_lvl.HIGH) {
+                data[2] = 'H'; data[3] = 'i'; data[4] = 'g'; data[5] = 'h';
+                wcscpy(&data[6], wcharStr);
+                WriteFile(hPipe, &data, sizeof(data), &dwWritten, NULL);
+            }
+            else if (int_lvl.SYS) {
+                //
+            }
+            else {
+                err = NOT_SELECTED;
+            }
+        }
+        else {
+            err = NO_FILE;
+        }
+
+        if (err != 0) {
+            switch (err) {
+            case NO_FILE:
+                QMessageBox::information(this, "Error", "No such file");
+                break;
+            case NOT_SELECTED:
+                QMessageBox::information(this, "Error", "No Mandatory level selected");
+                break;
+            default:
+                QMessageBox::information(this, "Error", "Unknown error");
+                break;
+            }
+        }
+        else {
+            QMessageBox::information(this, "Success", "Successfully changed level");
+        }
+    }
+    else {
+        QMessageBox::information(this, "ERROR", "Pipe problem");
+    }
+}
 processenjoyer::~processenjoyer()
 {
 

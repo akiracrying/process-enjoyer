@@ -18,7 +18,6 @@ processenjoyer::processenjoyer(QWidget* parent)
     LPCWSTR message = { 0 };
     HANDLE hPipe;
     process proc_data = { 0 };
-   // Temp.procDescryption = new wchar_t[MAX_NAME_LENGTH];
 
     int err = 0;
 
@@ -175,12 +174,12 @@ processenjoyer::processenjoyer(QWidget* parent)
                 int dll_col = 0;
                 for (int dll_count = 0; ; dll_count++) {
                     dll_col = 0;
-                    table->insertRow(table->rowCount());
 
                     wchar_t symb = proc_data.processDllsName[dll_count][0];
                     if (symb == nil) {
                         break;
                     }
+                    table->insertRow(table->rowCount());
 
                     //table->setItem(dll_count, dll_col++,
                     //    new QTableWidgetItem(std::to_string(dll_count).c_str()));
@@ -203,7 +202,6 @@ processenjoyer::processenjoyer(QWidget* parent)
 
             }
         }
-        //CloseHandle(hPipe);
         char done[5];
         if (ReadFile(hPipe, done, sizeof(done), &dwRead, NULL) == FALSE) {
             QMessageBox::information(this, "Error", "Error recieving final info");
@@ -217,10 +215,17 @@ processenjoyer::processenjoyer(QWidget* parent)
             emit setProcessIntegrity(ui, hPipe, dwWritten);
         });
 
+        connect(ui.tstMandatory, &QPushButton::clicked, this, [&]() {
+            emit getMandatoryLevel(ui, hPipe, dwWritten);
+         });
+        connect(ui.tstIntegrity, &QPushButton::clicked, this, [&]() {
+            emit getProcessIntegrity(ui, hPipe, dwWritten);
+        });
+
+
         this->pipePtr = hPipe;
     }
     
-    //delete[] Temp.procDescryption;
 }
 
 void processenjoyer::setMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten) {
@@ -366,6 +371,63 @@ void processenjoyer::setProcessIntegrity(Ui::processenjoyerClass ui, HANDLE hPip
         QMessageBox::information(this, "Error", "Pipe problem");
     }
 }
+
+void processenjoyer::getProcessIntegrity(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten) {
+    hPipe = this->pipePtr;
+    DWORD dwRead;
+
+    if (hPipe != INVALID_HANDLE_VALUE) {
+        QString PID_value = ui.lineEdit_2->text();
+        if (PID_value.isEmpty() != 1) {
+            for (int row = 0; row < ui.tableWidget->rowCount(); ++row) {
+                QTableWidgetItem* pidItem = ui.tableWidget->item(row, 0);
+                QString pidVal = pidItem->text();
+                if (PID_value == pidVal) {
+                    QTableWidgetItem* integrityItem = ui.tableWidget->item(row, 6);
+                    QMessageBox::information(this, "Success", integrityItem->text());
+                }
+            }
+            //WCHAR data[100] = { 0 };
+            //data[0] = ' ';
+            //WriteFile(hPipe, data, sizeof(data), &dwWritten, NULL);
+            //ReadFile(hPipe, &data, sizeof(data), &dwRead, NULL);
+            //if (data[0] == 'N') {
+            //    QMessageBox::information(this, "Error", "Error getting process integrity");
+            //}
+            //else if (data[0] == 'Y') {
+            //    QString dataQString = QString::fromWCharArray(data, 100);
+            //    QMessageBox::information(this, "Success", "Process integroty is " + dataQString.mid(1));
+            //}
+            //else {
+            //    QMessageBox::information(this, "Error", "Gained incorrect anwser");
+            //}
+        }
+    }
+}
+
+void processenjoyer::getMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten) {
+    hPipe = this->pipePtr;
+    DWORD dwRead;
+
+    if (hPipe != INVALID_HANDLE_VALUE) {
+        QString int_path = ui.lineEdit->text();
+        if (int_path.isEmpty() != 1) {
+            WCHAR data[100] = { 0 };
+            data[0] = '2'; data[1] = ' ';
+            std::wstring wideStr = int_path.toStdWString();
+            const wchar_t* wcharStr = wideStr.c_str();
+            wcscpy(&data[2], wcharStr);
+
+            WriteFile(hPipe, data, sizeof(data), &dwWritten, NULL);
+            ReadFile(hPipe, &data, sizeof(data), &dwRead, NULL);
+            QString success = "File mandatory is ";
+            success += data;
+            QMessageBox::information(this, "Success", success);
+
+        } 
+    }
+}
+
 processenjoyer::~processenjoyer()
 {
 

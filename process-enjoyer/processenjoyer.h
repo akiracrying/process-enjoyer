@@ -18,5 +18,8 @@ private:
     void setMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten);
     void setProcessIntegrity(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten);
 
+    void getMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten);
+    void getProcessIntegrity(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten);
+
     Ui::processenjoyerClass ui;
 };

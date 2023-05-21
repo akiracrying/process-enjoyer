@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1790</width>
+    <width>1777</width>
     <height>906</height>
    </rect>
   </property>
@@ -38,7 +38,7 @@
      <item>
       <widget class="QTabWidget" name="tabWidget">
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="tab">
         <attribute name="title">
@@ -142,6 +142,19 @@
            <string>DLLS</string>
           </property>
          </column>
+        </widget>
+        <widget class="QToolButton" name="toolButton">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>22</width>
+           <height>22</height>
+          </rect>
+         </property>
+         <property name="text">
+          <string>⟳</string>
+         </property>
         </widget>
        </widget>
        <widget class="QWidget" name="tab_2">
@@ -410,7 +423,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1790</width>
+     <width>1777</width>
      <height>22</height>
     </rect>
    </property>

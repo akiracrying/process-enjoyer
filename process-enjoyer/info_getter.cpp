@@ -1,17 +1,5 @@
 #include "info_getter.h"
 
-void getProcessInfo(HANDLE hPipe, int*err, process* Temp) {
-    DWORD dwRead;
-    DWORD dwWritten;
-
-    if (ReadFile(hPipe, Temp, sizeof(Temp), &dwRead, NULL) != FALSE)
-    {
-        WriteFile(hPipe, Temp, sizeof(Temp), &dwWritten, NULL);
-    }
-    else {
-        *err = 1;
-    }
-}
 
 //void setMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten, int *err){
 //        hPipe = CreateFile(TEXT("\\\\.\\pipe\\Pipe"), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);

@@ -33,7 +33,7 @@ void getIntegrityLevel(HANDLE hProcess);
 void changeProcIntegrity(DWORD processID, wchar_t* integrity);
 
 /* Get File information */
-void getFileIntegrityLevel(WCHAR* file_name);
+WCHAR* getFileIntegrityLevel(WCHAR* file_name);
 void changeFileIntegrityLevel(WCHAR* file_name, WCHAR* integrity);
 
 /* Functions to collect full info about all processes */
@@ -76,5 +76,6 @@ enum Command
 	CHANGE_INTEGRITY,
 	MANDATORY,
 	CHANGE_MANDATORY,
-	DISCONNECT
+	DISCONNECT,
+	INTEGRITY
 };

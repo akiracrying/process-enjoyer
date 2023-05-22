@@ -56,15 +56,12 @@ processenjoyer::processenjoyer(QWidget* parent)
 }
 
 void processenjoyer::reloadTable(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten, process proc_data, DWORD dwRead) {
-    //delete[] ui.tableWidget;
-    //ui.tableWidget = new QTableWidget;
     hPipe = this->pipePtr;
 
     ui.tableWidget->setRowCount(0);
-    //ui.tableWidget->clearContents();
-    //ui.tableWidget->setColumnCount(0);
+    ui.tableWidget->clear();
 
-    WCHAR data[5] = { 0 };// = new WCHAR[int_path.length() + 10];
+    WCHAR data[5] = { 0 };
     data[0] = '0'; data[1] = '\0';
     WriteFile(hPipe, data, sizeof(data), &dwWritten, NULL);
     updateTable(ui, hPipe, dwWritten, proc_data, dwRead);
@@ -231,9 +228,6 @@ void processenjoyer::updateTable(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD
                 }
                 table->insertRow(table->rowCount());
 
-                //table->setItem(dll_count, dll_col++,
-                //    new QTableWidgetItem(std::to_string(dll_count).c_str()));
-
                 wcharConverter = new char[sizeof(proc_data.processDllsName[dll_count])];
                 wcstombs(wcharConverter, proc_data.processDllsName[dll_count], sizeof(proc_data.processDllsName[dll_count]));
 
@@ -255,7 +249,6 @@ void processenjoyer::updateTable(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD
 }
 
 void processenjoyer::setMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe, DWORD dwWritten) {
-    //hPipe = CreateFile(TEXT("\\\\.\\pipe\\Pipe"), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
     hPipe = this->pipePtr;
     int err = 0;
     if (hPipe != INVALID_HANDLE_VALUE) {
@@ -265,20 +258,15 @@ void processenjoyer::setMandatoryLevel(Ui::processenjoyerClass ui, HANDLE hPipe,
                 err = NO_SUCH_FILE;
             }
             struct choice {
-                //int UNTRUSTED; // 7
                 int LOW; // 9
                 int MEDIUM; // 10
                 int HIGH; // 8
-                //int SYS; // 6
             } int_lvl = {
-                //ui.radioButton_7->isChecked(),
                 ui.radioButton_9->isChecked(),
                 ui.radioButton_10->isChecked(),
                 ui.radioButton_8->isChecked(),
-                //ui.radioButton_6->isChecked(),
             };
-            WCHAR data[100] = { 0 };// = new WCHAR[int_path.length() + 10];
-            //memset(data, 0, int_path.length() + 6 * sizeof(WCHAR));
+            WCHAR data[100] = { 0 };
 
             std::wstring wideStr = int_path.toStdWString();
             const wchar_t* wcharStr = wideStr.c_str();
@@ -391,7 +379,7 @@ void processenjoyer::setProcessIntegrity(Ui::processenjoyerClass ui, HANDLE hPip
             }
         }
         else {
-            QMessageBox::information(this, "Success", "Successfully changed level");
+            int isCh = 0;
             for (int row = 0; row < ui.tableWidget->rowCount(); ++row) {
                 QTableWidgetItem* pidItem = ui.tableWidget->item(row, 0);
                 QString pidVal = pidItem->text();
@@ -409,7 +397,15 @@ void processenjoyer::setProcessIntegrity(Ui::processenjoyerClass ui, HANDLE hPip
                         break;
                     }
                     ui.tableWidget->setItem(row, 6, dataInt);
+                    isCh = 1;
+                    break;
                 }
+            }
+            if (isCh == 0) {
+                QMessageBox::information(this, "Error", "Error changing level");
+            }
+            else {
+                QMessageBox::information(this, "Success", "Successfully changed level");
             }
         }
     }

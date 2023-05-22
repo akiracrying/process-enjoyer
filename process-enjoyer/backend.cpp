@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+﻿#define _CRT_SECURE_NO_WARNINGS
 #include "backend.h"
 
 process Processes[MAX_COUNT] = { 0 };               /* Array of structures of all processes in the system */
@@ -501,7 +501,7 @@ void changeProcIntegrity(DWORD processID, wchar_t* integrity)
     CloseHandle(hProcess);
 }
 
-void getFileIntegrityLevel(WCHAR* file_name)
+WCHAR* getFileIntegrityLevel(WCHAR* file_name)
 {
     DWORD integrityLevel = SECURITY_MANDATORY_UNTRUSTED_RID;
     PSECURITY_DESCRIPTOR pSD = NULL;
@@ -532,6 +532,8 @@ void getFileIntegrityLevel(WCHAR* file_name)
     else if (integrityLevel == 0x3000) wcscpy(fileIntegrity, L"High");
     else if (integrityLevel == 0x4000) wcscpy(fileIntegrity, L"System");
     else wcscpy(fileIntegrity, L"Error");
+
+    return fileIntegrity;
 }
 
 void changeFileIntegrityLevel(WCHAR* file_name, WCHAR* integrity)
@@ -543,10 +545,10 @@ void changeFileIntegrityLevel(WCHAR* file_name, WCHAR* integrity)
     BOOL fSaclDefaulted = FALSE;
 
     if (ConvertStringSecurityDescriptorToSecurityDescriptorW((LPCWSTR)integrity, SDDL_REVISION_1, &pSD, NULL))
-    { 
+    {
         if (GetSecurityDescriptorSacl(pSD, &fSaclPresent, &pSacl, &fSaclDefaulted))
-        {            
-            if (!SetNamedSecurityInfoW(file_name, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, pSacl))
+        {
+            if (SetNamedSecurityInfoW(file_name, SE_FILE_OBJECT, LABEL_SECURITY_INFORMATION, NULL, NULL, NULL, pSacl))
             {
                 fprintf(stdout, "[Error]: SetNamedSecurityInfoW - %d\n", GetLastError());
             }
@@ -569,7 +571,7 @@ void sendDatabase(HANDLE hPipe)
     DWORD dwWritten;
     process Temp = { 0 };
 
-    for (size_t i = 0; i < valid_proc_counter; ++i)
+    for (size_t i = 0; i < valid_proc_counter + 1; ++i)
     {
         while (1)
         {
@@ -584,6 +586,8 @@ void sendDatabase(HANDLE hPipe)
             }
         }
     }
+    WriteFile(hPipe, "DONE", 5, &dwWritten, NULL);
+
 }
 
 void establishPipe()
@@ -620,11 +624,12 @@ void establishPipe()
         {
             sendDatabase(hPipe);
         }
-
         while (1)
         {
-            if (ReadFile(hPipe, buffer, sizeof(buffer), &dwRead, NULL) != FALSE)
+            BOOL read = ReadFile(hPipe, buffer, sizeof(buffer), &dwRead, NULL);
+            if (read != FALSE)
             {
+                printf("Entered");
                 int command = buffer[0] - 48; // 1 Low 4242
                 WCHAR* context = { 0 };
                 WCHAR* pointer = &buffer[2];
@@ -632,10 +637,12 @@ void establishPipe()
                 WCHAR* procId;
                 DWORD processID;
                 WCHAR* fileName;
+                WCHAR integrity_cmd[30] = {0};
 
                 switch (command)
                 {
                 case DATABASE:
+                    valid_proc_counter = 0;
                     processesDatabase();
                     sendDatabase(hPipe);
                     break;
@@ -654,24 +661,26 @@ void establishPipe()
 
                 case MANDATORY:
                     fileName = wcstok_s(pointer, L"\0", &context);
-                    getFileIntegrityLevel(fileName);
+                    WCHAR fileInt[32];
+                    WriteFile(hPipe, getFileIntegrityLevel(fileName), sizeof(fileInt), &dwWritten, NULL);
+
                     break;
 
                 case CHANGE_MANDATORY:
-                    fileName = wcstok_s(pointer, L" \0", &context);
-                    integrity = wcstok_s(NULL, L" \0", &context);
+                    integrity = wcstok_s(pointer, L" \0", &context);
+                    fileName = wcstok_s(NULL, L" \0", &context);
+                    if (!wcscmp(integrity, L"Low")) wcscpy(integrity_cmd, L"S:(ML;;NR;;;LW)");
+                    else if (!wcscmp(integrity, L"Medium")) wcscpy(integrity_cmd, L"S:(ML;;NR;;;ME)");
+                    else wcscpy(integrity_cmd, L"S:(ML;;NR;;;HI)");
 
-                    if (!wcscmp(integrity, L"Low")) wcscpy(integrity, L"S:(ML;;NR;;;LW)");
-                    else if (!wcscmp(integrity, L"Medium")) wcscpy(integrity, L"S:(ML;;NR;;;ME)"); 
-                    else wcscpy(integrity, L"S:(ML;;NR;;;HI)"); 
-
-                    changeFileIntegrityLevel(fileName, integrity);
+                    changeFileIntegrityLevel(fileName, integrity_cmd);
                     break;
 
                 case DISCONNECT:
                     DisconnectNamedPipe(hPipe);
                     CloseHandle(hPipe);
                     break;
+
 
                 default:
                     break;
@@ -685,15 +694,15 @@ int main(int argc, char** argv)
 {
     setlocale(LC_ALL, "");
 
-    //establishPipe();
+    establishPipe();
 
     //changeFileIntegrityLevel((WCHAR*)L"C:\\Programs_6_sem\\BSIT_LABA_1\\x64\\Release", (WCHAR*)L"S:(ML;;NR;;;LW)");
     getFileIntegrityLevel((WCHAR*)L"C:\\Programs_6_sem\\BSIT_LABA_1\\x64\\Release");
 
-    //DWORD sePrivilege = SE_PRIVILEGE_ENABLED;
+    DWORD sePrivilege = SE_PRIVILEGE_ENABLED;
     //turnDebugPrivilege(sePrivilege);
 
-    ////processesDatabase();
+    processesDatabase();
 
     //sePrivilege = 0;
     //turnDebugPrivilege(sePrivilege);

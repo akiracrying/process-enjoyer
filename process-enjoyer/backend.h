@@ -33,7 +33,7 @@ void getIntegrityLevel(HANDLE hProcess);
 void changeProcIntegrity(DWORD processID, wchar_t* integrity);
 
 /* Get File information */
-void getFileIntegrityLevel(WCHAR* file_name);
+WCHAR* getFileIntegrityLevel(WCHAR* file_name);
 void changeFileIntegrityLevel(WCHAR* file_name, WCHAR* integrity);
 
 /* Functions to collect full info about all processes */
@@ -47,28 +47,28 @@ void establishPipe();
 /* Auxiliary function (maybe useless) */
 BOOL turnDebugPrivilege();
 
-//typedef struct process
-//{
-//	DWORD PID;
-//	wchar_t processName[MAX_NAME_LENGTH];
-//	wchar_t pathProcessExe[MAX_PATH];
-//	wchar_t processOwner[MAX_NAME_LENGTH];
-//	wchar_t SID[MAX_NAME_LENGTH];
-//	wchar_t procType[MAX_TYPE_LENGTH];
-//	wchar_t integrityLevel[MAX_DETAILS_LENGTH];
-//	wchar_t procDescryption[MAX_NAME_LENGTH];
-//
-//	BOOL CLR;
-//	BOOL ASLR;
-//	BOOL DEP;
-//	wchar_t aslrDetails[MAX_DETAILS_LENGTH];
-//	wchar_t depDetails[MAX_DETAILS_LENGTH];
-//
-//	wchar_t parentName[MAX_NAME_LENGTH];
-//	DWORD parentPID;
-//
-//	wchar_t processDllsName[MAX_COUNT][MAX_NAME_LENGTH];
-//}process;
+typedef struct process
+{
+	DWORD PID;
+	wchar_t processName[MAX_NAME_LENGTH];
+	wchar_t pathProcessExe[MAX_PATH];
+	wchar_t processOwner[MAX_NAME_LENGTH];
+	wchar_t SID[MAX_NAME_LENGTH];
+	wchar_t procType[MAX_TYPE_LENGTH];
+	wchar_t integrityLevel[MAX_DETAILS_LENGTH];
+	wchar_t procDescryption[MAX_NAME_LENGTH];
+
+	BOOL CLR;
+	BOOL ASLR;
+	BOOL DEP;
+	wchar_t aslrDetails[MAX_DETAILS_LENGTH];
+	wchar_t depDetails[MAX_DETAILS_LENGTH];
+
+	wchar_t parentName[MAX_NAME_LENGTH];
+	DWORD parentPID;
+
+	wchar_t processDllsName[MAX_COUNT][MAX_NAME_LENGTH];
+}process;
 
 enum Command
 {
@@ -76,5 +76,6 @@ enum Command
 	CHANGE_INTEGRITY,
 	MANDATORY,
 	CHANGE_MANDATORY,
-	DISCONNECT
+	DISCONNECT,
+	INTEGRITY
 };
